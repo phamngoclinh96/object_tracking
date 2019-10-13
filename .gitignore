@@ -1,0 +1,4 @@
+*.avi
+*.pyc
+.idea
+yolo3.weights
