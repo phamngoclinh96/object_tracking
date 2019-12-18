@@ -77,7 +77,7 @@ if __name__ == '__main__':
     while True:
         if len(object_tracking.result)>0:
             cv2.imshow('frame', object_tracking.result.pop(0))
-        time.sleep(1)
+        time.sleep(0.05)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
