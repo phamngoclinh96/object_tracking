@@ -18,14 +18,18 @@ class ObjectTracking:
         self.down = 0
         self.result = []
 
-    def tracking(self, cap):
+    def tracking(self, cap, output_file):
         frame_id = 1
         objects = []
+        out = None
         while True:
             print(frame_id)
 
             ret, frame = cap.read()
-            frame = cv2.resize(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)))
+            # frame = cv2.resize(frame, (int(frame.shape[1]), int(frame.shape[0])))
+            if out is None:
+                out = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
+                                      (frame.shape[1], frame.shape[0]))
             if ret is False:
                 frame_id += 1
                 break
@@ -88,6 +92,9 @@ class ObjectTracking:
             #     cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 1)
             frame_id += 1
             self.result.append(frame)
+            out.write(frame)
+        if out is not None:
+            out.release()
 
 
 if __name__ == '__main__':
@@ -100,7 +107,8 @@ if __name__ == '__main__':
         path_out = sys.argv[2]
     object_tracking = ObjectTracking()
     cap = cv2.VideoCapture(path_in)
-    th = Thread(target=object_tracking.tracking, args=[cap])
+
+    th = Thread(target=object_tracking.tracking, args=[cap, path_out])
     th.start()
     time.sleep(5)
     while True:
@@ -108,4 +116,7 @@ if __name__ == '__main__':
             cv2.imshow('frame', object_tracking.result.pop(0))
         time.sleep(0.05)
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+        if th.is_alive():
             break
