@@ -13,15 +13,20 @@ class ObjectDetection:
             self.classes = [line.strip() for line in f.readlines()]
         self.COLORS = np.random.uniform(0, 255, size=(len(self.classes), 3))
         self.net = cv2.dnn.readNet(path_model, path_config)
+        ln = self.net.getLayerNames()
+        self.ln = [ln[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+        print(self.ln)
 
     def detect(self, image):
         Width = image.shape[1]
         Height = image.shape[0]
         scale = 0.00392
-        blob = cv2.dnn.blobFromImage(image, scale, (416, 416), (0, 0, 0), True, crop=False)
+        blob = cv2.dnn.blobFromImage(image, scale, (320, 320), (0, 0, 0), True, crop=False)
 
         self.net.setInput(blob)
-        outs = self.net.forward(['yolo_82', 'yolo_94', 'yolo_106'])
+
+        # 'yolo_82', 'yolo_94', 'yolo_106'
+        outs = self.net.forward(self.ln)
         class_ids = []
         confidences = []
         boxes = []
