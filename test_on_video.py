@@ -9,7 +9,8 @@ from collections import defaultdict
 
 class ObjectTracking:
     def __init__(self, y0=100):
-        self.object_detection = ObjectDetection()
+        self.object_detection = ObjectDetection(path_model='yolo/yolo3.weights',
+                                                path_config='yolo/yolo3.cfg')
         self.deepsort = deepsort_rbc()
         self.objects = defaultdict(list)
         self.objects_direction = defaultdict(int)
@@ -17,19 +18,19 @@ class ObjectTracking:
         self.up = 0
         self.down = 0
         self.result = []
+        self.is_running = True
 
-    def tracking(self, cap, output_file):
+    def stop(self):
+        self.is_running = False
+
+    def tracking(self, cap):
         frame_id = 1
         objects = []
-        out = None
-        while True:
+        while self.is_running:
             print(frame_id)
 
             ret, frame = cap.read()
-            # frame = cv2.resize(frame, (int(frame.shape[1]), int(frame.shape[0])))
-            if out is None:
-                out = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
-                                      (frame.shape[1], frame.shape[0]))
+            frame = cv2.resize(frame, (int(frame.shape[1] / 1.5), int(frame.shape[0] / 1.5)))
             if ret is False:
                 frame_id += 1
                 break
@@ -92,9 +93,7 @@ class ObjectTracking:
             #     cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 1)
             frame_id += 1
             self.result.append(frame)
-            out.write(frame)
-        if out is not None:
-            out.release()
+            print('len result', len(self.result))
 
 
 if __name__ == '__main__':
@@ -107,16 +106,21 @@ if __name__ == '__main__':
         path_out = sys.argv[2]
     object_tracking = ObjectTracking()
     cap = cv2.VideoCapture(path_in)
+    out = None
 
-    th = Thread(target=object_tracking.tracking, args=[cap, path_out])
+    th = Thread(target=object_tracking.tracking, args=[cap])
     th.start()
     time.sleep(5)
-    while True:
+    while len(object_tracking.result) > 0 or th.isAlive:
         if len(object_tracking.result) > 0:
-            cv2.imshow('frame', object_tracking.result.pop(0))
-        time.sleep(0.05)
+            frame = object_tracking.result.pop(0)
+            cv2.imshow('frame', frame)
+            if out is None:
+                out = cv2.VideoWriter(path_out, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
+                                      (frame.shape[1], frame.shape[0]))
+            out.write(frame)
+        time.sleep(0.1)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-        if th.is_alive():
-            break
+    object_tracking.stop()
+    out.release()
