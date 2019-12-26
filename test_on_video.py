@@ -30,6 +30,8 @@ class ObjectTracking:
             print(frame_id)
 
             ret, frame = cap.read()
+            if frame is None:
+                break
             frame = cv2.resize(frame, (int(frame.shape[1] / 1.5), int(frame.shape[0] / 1.5)))
             if ret is False:
                 frame_id += 1
